@@ -2,6 +2,8 @@
 
 An end-to-end **Customer Shopping Intelligence Platform** built to analyze customer purchasing behavior, identify business trends, understand customer segments, and generate actionable business insights.
 
+<escape>🌐 **Live Dashboard:** </escape>[**Explore RetailPulse on Streamlit**](https://customer-behavior-analysis-cpmbulhyyx3b9tyviejdp3.streamlit.app/)
+
 RetailPulse combines Python, SQL, data visualization, and machine learning to transform raw customer shopping data into meaningful insights through an interactive Streamlit dashboard.
 
 ## 📌 Project Overview
