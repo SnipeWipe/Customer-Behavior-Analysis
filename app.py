@@ -3,7 +3,6 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.pipeline import Pipeline
-import helper
 import plotly.express as px
 import matplotlib.pyplot as plt
 import seaborn as sns
