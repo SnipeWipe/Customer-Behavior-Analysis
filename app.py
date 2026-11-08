@@ -5,8 +5,7 @@ Run:
     streamlit run app.py
 
 Data source:
-  1) PostgreSQL: set DATABASE_URL in .streamlit/secrets.toml or environment
-  2) CSV upload: upload customer_shopping_behavior.csv in the sidebar
+  Upload customer_shopping_behavior.csv (or another compatible CSV file) in the sidebar.
 
 Expected dataset fields (case/spacing differences are normalized):
 customer_id, age, gender, item_purchased, category, purchase_amount_(usd),
@@ -17,18 +16,15 @@ payment_method, frequency_of_purchases
 
 from __future__ import annotations
 
-import os
 import re
 import io
 import warnings
-from typing import Optional
 
 import numpy as np
 import pandas as pd
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
-from sqlalchemy import create_engine, text
 from sklearn.cluster import KMeans
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
@@ -177,28 +173,6 @@ def load_csv_bytes(file_bytes: bytes) -> pd.DataFrame:
     return pd.read_csv(io.BytesIO(file_bytes))
 
 
-def get_database_url() -> Optional[str]:
-    try:
-        if "DATABASE_URL" in st.secrets:
-            return str(st.secrets["DATABASE_URL"])
-    except Exception:
-        pass
-    return os.getenv("DATABASE_URL")
-
-
-def load_postgres_table(table_name: str = "customer") -> pd.DataFrame:
-    url = get_database_url()
-    if not url:
-        raise RuntimeError("DATABASE_URL is not configured.")
-    # Render/Supabase commonly provide postgres://; SQLAlchemy expects postgresql://.
-    url = url.replace("postgres://", "postgresql://", 1)
-    engine = create_engine(url, pool_pre_ping=True, pool_recycle=300)
-    try:
-        return pd.read_sql_query(text(f'SELECT * FROM "{table_name}"'), engine)
-    finally:
-        engine.dispose()
-
-
 def money(value: float) -> str:
     return f"${value:,.2f}"
 
@@ -229,34 +203,20 @@ def require_columns(df: pd.DataFrame, columns: list[str]) -> bool:
 
 st.sidebar.title("🛍️ RetailPulse")
 st.sidebar.caption("Customer Shopping Intelligence")
-source = st.sidebar.radio("Data source", ["Upload CSV", "PostgreSQL"], index=0)
+uploaded = st.sidebar.file_uploader(
+    "Upload customer shopping CSV",
+    type=["csv"],
+    help="Upload your customer_shopping_behavior.csv file or another compatible CSV.",
+)
 
-raw_df = None
-try:
-    if source == "Upload CSV":
-        uploaded = st.sidebar.file_uploader(
-            "Upload customer shopping CSV",
-            type=["csv"],
-            help="Use your cleaned or original customer_shopping_behavior.csv file.",
-        )
-        if uploaded is not None:
-            raw_df = load_csv_bytes(uploaded.getvalue())
-        else:
-            st.info("Upload your customer_shopping_behavior.csv file in the sidebar to launch the dashboard.")
-            st.stop()
-    else:
-        table = st.sidebar.text_input("PostgreSQL table", value="customer")
-        if st.sidebar.button("Connect and load data", type="primary"):
-            with st.spinner("Connecting to PostgreSQL..."):
-                raw_df = load_postgres_table(table.strip())
-            st.session_state["retailpulse_data"] = raw_df
-        elif "retailpulse_data" in st.session_state:
-            raw_df = st.session_state["retailpulse_data"]
-        else:
-            st.warning("Set DATABASE_URL in Streamlit Secrets, then click Connect and load data.")
-            st.stop()
-except Exception as exc:
-    st.error(f"Could not load data: {exc}")
+if uploaded is not None:
+    try:
+        raw_df = load_csv_bytes(uploaded.getvalue())
+    except Exception as exc:
+        st.error(f"Could not read the CSV file: {exc}")
+        st.stop()
+else:
+    st.info("Upload your customer shopping CSV file in the sidebar to launch the dashboard.")
     st.stop()
 
 try:
@@ -596,7 +556,7 @@ elif page == "Customer Segmentation":
 # ----------------------------- DATA QUALITY & SQL -------------------------
 
 elif page == "Data Quality & SQL":
-    section_heading("Data Quality & SQL", "Inspect schema, missing values, distributions and run read-only SQL queries.")
+    section_heading("Data Quality & SQL", "Inspect the schema, missing values, distributions and cleaned records.")
     quality = pd.DataFrame({
         "column": df.columns,
         "data_type": [str(df[c].dtype) for c in df.columns],
@@ -611,34 +571,10 @@ elif page == "Data Quality & SQL":
     c2.metric("Columns", f"{len(df.columns):,}")
     c3.metric("Exact duplicate rows", f"{int(df.duplicated().sum()):,}")
 
-    st.markdown("#### Read-only SQL playground")
-    st.caption("Queries run against the currently loaded in-memory dataset using DuckDB-style SQL is not enabled here. Use the Python-backed examples below or connect your PostgreSQL database in a SQL client.")
-    st.code(
-        """-- Example PostgreSQL queries for your customer table
-
--- 1. Average purchase amount by category
-SELECT category, AVG(purchase_amount) AS avg_purchase
-FROM customer
-GROUP BY category
-ORDER BY avg_purchase DESC;
-
--- 2. Customer-record distribution by subscription
-SELECT subscription_status, COUNT(*) AS records
-FROM customer
-GROUP BY subscription_status;
-
--- 3. Average rating by category
-SELECT category, ROUND(AVG(review_rating)::numeric, 2) AS avg_rating
-FROM customer
-GROUP BY category
-ORDER BY avg_rating DESC;
-
--- 4. Purchase amount by age group
-SELECT age_group, AVG(purchase_amount) AS avg_purchase
-FROM customer
-GROUP BY age_group
-ORDER BY avg_purchase DESC;""",
-        language="sql",
+    st.markdown("#### Dataset inspection")
+    st.caption(
+        "The uploaded CSV is cleaned and analyzed in memory. Use the tables, charts, "
+        "filters, and download options on this page to inspect the dataset."
     )
 
     st.markdown("#### Preview cleaned records")
@@ -654,9 +590,10 @@ ORDER BY avg_purchase DESC;""",
 
 st.divider()
 st.caption(
-    "RetailPulse portfolio project | Python · Pandas · PostgreSQL · Streamlit · Plotly · scikit-learn"
+    "RetailPulse portfolio project | Python · Pandas · Streamlit · Plotly · scikit-learn"
 )
 st.caption(
     "Analytical note: the source dataset is cross-sectional. Findings describe patterns in the available records "
     "and should not be interpreted as causal effects or longitudinal customer behavior."
 )
+
