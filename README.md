@@ -1,69 +1,275 @@
 # 🛍️ RetailPulse – Customer Shopping Intelligence Platform
 
-An end-to-end data analytics project that transforms customer shopping data into meaningful business insights through **Python, SQL, and an interactive Streamlit dashboard**.
+An end-to-end **Customer Shopping Intelligence Platform** built to analyze customer purchasing behavior, identify business trends, understand customer segments, and generate actionable business insights.
 
-RetailPulse explores customer purchasing patterns, product performance, subscription behavior, marketing effectiveness, and customer segments to help businesses make data-driven decisions.
+RetailPulse combines Python, SQL, data visualization, and machine learning to transform raw customer shopping data into meaningful insights through an interactive Streamlit dashboard.
 
 ## 📌 Project Overview
 
-The project uses a customer shopping behavior dataset containing **3,900 customer records and 18 attributes**. It combines exploratory data analysis, data cleaning, SQL-based business analysis, interactive visualizations, and machine learning-based customer segmentation.
+Understanding customer behavior is essential for businesses to improve customer engagement, optimize marketing strategies, identify popular products, and increase revenue.
 
-The goal is to understand customer behavior, identify purchasing trends, and uncover opportunities to improve marketing and sales strategies.
+**RetailPulse** analyzes a customer shopping dataset containing approximately **3,900 customer records and 18 attributes**. The project covers the complete analytics workflow, from data cleaning and exploratory analysis to SQL-based business analysis, customer segmentation, and interactive visualization.
 
-## 🛠️ Tech Stack
+## 🎯 Project Objectives
 
-- **Python:** Pandas, NumPy, Scikit-learn
-- **SQL:** PostgreSQL
-- **Visualization:** Plotly, Matplotlib, Seaborn
-- **Dashboard:** Streamlit
-- **Machine Learning:** K-Means Clustering
-- **Tools:** Jupyter Notebook, Git, GitHub
+- Understand customer purchasing patterns and preferences.
+- Analyze revenue and product performance.
+- Evaluate discount usage and subscription behavior.
+- Identify customer loyalty and purchasing trends.
+- Segment customers using machine learning.
+- Present business insights through an interactive dashboard.
+
+## 🛠️ Technology Stack
+
+| Category | Technologies |
+|---|---|
+| Programming | Python |
+| Data Analysis | Pandas, NumPy |
+| Database & SQL | PostgreSQL |
+| Visualization | Plotly, Matplotlib, Seaborn |
+| Dashboard | Streamlit |
+| Machine Learning | Scikit-learn, K-Means |
+| Development | Jupyter Notebook, VS Code |
+| Version Control | Git, GitHub |
 
 ## 📊 Project Workflow
 
-1. **Data Exploration & Cleaning**
-   - Examined dataset structure, data types, and statistical summaries.
-   - Identified missing values and performed data cleaning.
-   - Standardized column names and prepared analytical features.
-   - Created age groups and other useful features for analysis.
+### 1. Data Cleaning & Preparation
+- Inspected the dataset for missing values and inconsistencies.
+- Standardized column names and data formats.
+- Performed data cleaning and preprocessing.
+- Created useful analytical features, including customer age groups.
+- Prepared the dataset for further analysis.
 
-2. **SQL Business Analysis**
+### 2. Exploratory Data Analysis (EDA)
+Explored customer purchasing behavior through:
+- Customer demographics and shopping preferences.
+- Product and category performance.
+- Purchase amount and revenue distribution.
+- Seasonal shopping trends.
+- Discount and promotional code usage.
+- Customer subscription behavior.
 
-   Developed SQL queries to answer 10 business-focused questions:
+### 3. SQL Business Analysis
 
-   - Revenue comparison between male and female customers.
-   - Identifying customers who used discounts but spent above average.
-   - Top 5 products based on average customer ratings.
-   - Comparing average purchase amounts across shipping methods.
-   - Evaluating subscription impact on customer spending.
-   - Products with the highest discount usage rates.
-   - Customer classification into New, Returning, and Loyal segments.
-   - Top 3 most purchased products within each category.
-   - Subscription behavior among repeat buyers.
-   - Revenue contribution across different age groups.
+Used PostgreSQL to investigate business questions and extract insights from the customer shopping dataset.
 
-3. **Interactive Streamlit Dashboard**
+The analysis covers aggregations, filtering, subqueries, conditional logic, Common Table Expressions (CTEs), and window functions.
 
-   RetailPulse provides six analytical modules:
+#### Business Questions & SQL Queries
 
-   | Module | Key Focus |
-   |---|---|
-   | Executive Overview | Revenue, purchase trends, and key KPIs |
-   | Customer Intelligence | Age, gender, location, and customer behavior |
-   | Product & Sales | Product performance and purchasing patterns |
-   | Marketing Intelligence | Discounts, promotions, and subscriptions |
-   | Customer Segmentation | Behavioral segmentation using K-Means |
-   | Data Quality & SQL | Data quality checks and SQL analysis |
+**Q1. What is the total revenue generated by each gender?**
 
-4. **Customer Segmentation Using Machine Learning**
+```sql
+SELECT
+    gender,
+    SUM(purchase_amount) AS total_revenue
+FROM customer
+GROUP BY gender;
+```
 
-   - Applied K-Means clustering to identify behavioral customer groups.
-   - Used numerical and categorical customer attributes.
-   - Applied StandardScaler and OneHotEncoder for preprocessing.
-   - Compared segment sizes, average spending, and purchase behavior.
-   - Visualized customer segments and enabled segment data export.
+**Concepts:** GROUP BY, SUM
 
-## 📂 Project Structure
+**Q2. Which customers used discounts but still spent more than or equal to the average purchase amount?**
+
+```sql
+SELECT
+    customer_id,
+    purchase_amount
+FROM customer
+WHERE discount_applied = 'Yes'
+AND purchase_amount >= (
+    SELECT AVG(purchase_amount)
+    FROM customer
+);
+```
+
+**Concepts:** Subquery, WHERE, AVG
+
+**Q3. Which five products have the highest average customer ratings?**
+
+```sql
+SELECT
+    item_purchased,
+    ROUND(AVG(review_rating::NUMERIC), 2) AS avg_product_rating
+FROM customer
+GROUP BY item_purchased
+ORDER BY avg_product_rating DESC
+LIMIT 5;
+```
+
+**Concepts:** AVG, GROUP BY, ORDER BY, LIMIT
+
+**Q4. What is the average purchase amount for each shipping type?**
+
+```sql
+SELECT
+    shipping_type,
+    ROUND(AVG(purchase_amount), 2) AS avg_purchase_amount
+FROM customer
+GROUP BY shipping_type;
+```
+
+**Concepts:** GROUP BY, AVG
+
+**Q5. How do subscribers and non-subscribers compare in terms of customer count, average spending, and total revenue?**
+
+```sql
+SELECT
+    subscription_status,
+    COUNT(customer_id) AS total_customers,
+    ROUND(AVG(purchase_amount), 2) AS avg_spend,
+    ROUND(SUM(purchase_amount), 2) AS total_revenue
+FROM customer
+GROUP BY subscription_status
+ORDER BY total_revenue DESC;
+```
+
+**Concepts:** COUNT, AVG, SUM, GROUP BY, ORDER BY
+
+**Q6. Which five products have the highest discount usage rates?**
+
+```sql
+SELECT
+    item_purchased,
+    ROUND(
+        100.0 * SUM(
+            CASE
+                WHEN discount_applied = 'Yes' THEN 1
+                ELSE 0
+            END
+        ) / COUNT(*),
+        2
+    ) AS discount_rate
+FROM customer
+GROUP BY item_purchased
+ORDER BY discount_rate DESC
+LIMIT 5;
+```
+
+**Concepts:** CASE WHEN, conditional aggregation, GROUP BY
+
+**Q7. How can customers be classified as New, Returning, or Loyal based on their previous purchases?**
+
+```sql
+WITH customer_type AS (
+    SELECT
+        customer_id,
+        previous_purchases,
+        CASE
+            WHEN previous_purchases <= 1 THEN 'New'
+            WHEN previous_purchases BETWEEN 2 AND 10 THEN 'Returning'
+            ELSE 'Loyal'
+        END AS customer_segment
+    FROM customer
+)
+SELECT
+    customer_segment,
+    COUNT(*) AS total_customers
+FROM customer_type
+GROUP BY customer_segment;
+```
+
+**Concepts:** CTE, CASE WHEN, GROUP BY
+
+**Q8. What are the top three most-purchased products within each category?**
+
+```sql
+WITH item_counts AS (
+    SELECT
+        category,
+        item_purchased,
+        COUNT(customer_id) AS total_orders,
+        ROW_NUMBER() OVER (
+            PARTITION BY category
+            ORDER BY COUNT(customer_id) DESC
+        ) AS item_rank
+    FROM customer
+    GROUP BY category, item_purchased
+)
+SELECT
+    item_rank,
+    category,
+    item_purchased,
+    total_orders
+FROM item_counts
+WHERE item_rank <= 3
+ORDER BY category, item_rank;
+```
+
+**Concepts:** CTE, ROW_NUMBER, PARTITION BY, Window Functions
+
+**Q9. How many customers with more than five previous purchases have a subscription?**
+
+```sql
+SELECT
+    subscription_status,
+    COUNT(customer_id) AS repeat_buyers
+FROM customer
+WHERE previous_purchases > 5
+GROUP BY subscription_status;
+```
+
+**Concepts:** WHERE, GROUP BY, COUNT
+
+**Q10. Which age groups contribute the most revenue?**
+
+```sql
+SELECT
+    age_group,
+    SUM(purchase_amount) AS total_revenue
+FROM customer
+GROUP BY age_group
+ORDER BY total_revenue DESC;
+```
+
+**Concepts:** GROUP BY, SUM, ORDER BY
+
+#### Key Analytical Areas
+
+- Revenue analysis across customer demographics.
+- Discount usage and purchasing behavior.
+- Product ratings and category-level performance.
+- Subscriber vs. non-subscriber comparison.
+- Customer loyalty and repeat purchasing.
+- Product ranking within categories.
+- Revenue contribution by age group.
+
+*The SQL queries produce the result sets used to evaluate these questions. Actual findings depend on the dataset and are not assumed or hardcoded in this documentation.*
+
+### 4. Interactive Streamlit Dashboard
+
+Developed an interactive dashboard using Streamlit and Plotly to explore customer shopping intelligence.
+
+The application uses a CSV upload as its data source, allowing users to upload the dataset and explore the analysis without configuring a database connection.
+
+**Dashboard Modules:**
+
+| Module | Description |
+|---|---|
+| Executive Overview | Key business metrics, revenue trends, and customer overview |
+| Customer Intelligence | Customer demographics, preferences, and purchasing patterns |
+| Product & Sales | Product performance, category analysis, and sales insights |
+| Marketing Intelligence | Discount usage, promotional behavior, and subscription analysis |
+| Customer Segmentation | Machine learning-based customer grouping |
+| Data Quality & SQL | Data quality checks and SQL-related analytical insights |
+
+### 5. Customer Segmentation Using K-Means
+
+Applied K-Means clustering to identify groups of customers with similar purchasing characteristics.
+
+**Implementation:**
+- Selected relevant numerical and categorical features.
+- Used StandardScaler for numerical feature scaling.
+- Used OneHotEncoder for categorical feature encoding.
+- Applied K-Means clustering with configurable cluster counts.
+- Generated customer segments and summarized their characteristics.
+- Visualized segment distribution and customer patterns.
+- Enabled downloading the segmented dataset.
+
+The segmentation module helps explore customer groups and supports data-driven marketing and customer engagement strategies.
+
+## 📁 Project Structure
 
 ```text
 RetailPulse/
@@ -76,45 +282,69 @@ RetailPulse/
 └── README.md
 ```
 
-*File names may vary depending on your repository.*
-
 ## 🚀 Run the Project Locally
 
 **1. Clone the repository**
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/RetailPulse.git
+git clone https://github.com/your-username/RetailPulse.git
+```
+
+**2. Navigate to the project directory**
+
+```bash
 cd RetailPulse
 ```
 
-**2. Install dependencies**
+**3. Create a virtual environment (optional)**
+
+```bash
+python -m venv venv
+```
+
+Activate it:
+
+```bash
+# macOS / Linux
+source venv/bin/activate
+
+# Windows
+venv\Scripts\activate
+```
+
+**4. Install dependencies**
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**3. Launch the Streamlit dashboard**
+**5. Run the Streamlit application**
 
 ```bash
 streamlit run app.py
 ```
 
-**4. Upload the dataset**
+**6. Upload the dataset**
 
-Upload `customer_shopping_behavior.csv` through the sidebar to explore the dashboard.
+Open the local Streamlit URL in your browser and upload `customer_shopping_behavior.csv` through the sidebar.
 
-## 💡 Key Learning Outcomes
+## 💡 Key Learnings
 
-- Translating business questions into SQL queries.
-- Performing exploratory data analysis and data cleaning.
-- Building interactive dashboards for business stakeholders.
-- Analyzing customer purchasing and marketing behavior.
+Through this project, I gained practical experience in:
+
+- End-to-end data analytics and preprocessing.
+- Exploratory data analysis and business interpretation.
+- Writing SQL queries to solve business problems.
+- Working with aggregations, subqueries, CTEs, and window functions.
+- Building interactive dashboards using Streamlit and Plotly.
 - Applying machine learning for customer segmentation.
-- Communicating analytical findings through visualizations.
+- Translating raw data into meaningful business insights.
 
-## 🎯 Project Objective
+## 🎯 Project Goal
 
-RetailPulse demonstrates how data analytics and machine learning can be combined to understand customer behavior, evaluate business performance, and support better retail decision-making.
+The goal of RetailPulse is to demonstrate how **data analytics, SQL, visualization, and machine learning** can work together to understand customer behavior and support better business decisions.
+
+This project reflects my interest in solving real-world business problems through data-driven approaches.
 
 ---
 
